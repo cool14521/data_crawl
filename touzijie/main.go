@@ -41,11 +41,15 @@ func (this *MyPageProcesser) Process(p *page.Page) {
     }
 
     query := p.GetHtmlParser()
+    //println(p.GetBodyStr())
     url := p.GetRequest().GetUrl()
     regDetail, _ := regexp.Compile("^http://zdb.pedaily.cn/inv/\\d+/$")
+
     if regDetail.MatchString(url) {
+        println("yyy")
         // 列表页
-        query.Find("table[class='zdb_table'] tr").Each(func(i int, s *goquery.Selection) {
+        query.Find("table[class='zdb_table'] tbody tr").Each(func(i int, s *goquery.Selection) {
+            println("xxxx")
             result := make(map[string]string)
             s.Find("td").Each(func(j int, s1 *goquery.Selection) {
                 switch j {
@@ -84,6 +88,8 @@ func (this *MyPageProcesser) Process(p *page.Page) {
                     }
                 }
             })
+            fmt.Printf("%v\t", result)
+            return
             if _, ok := result["eid"]; !ok {
                 return
             }
@@ -93,6 +99,7 @@ func (this *MyPageProcesser) Process(p *page.Page) {
             //urls = append(urls, "http://github.com/"+href)
             p.AddTargetRequest("http://zdb.pedaily.cn/inv/show"+result["eid"]+"/", "html")
         })
+        return
         nexturl := fmt.Sprintf("http://zdb.pedaily.cn/inv/%v/", this.pagelable)
         p.AddTargetRequest(nexturl, "html")
         this.pagelable++
@@ -109,23 +116,7 @@ func (this *MyPageProcesser) Process(p *page.Page) {
         desc := strings.TrimSpace(query.Find(".zdbdata .content p").Eq(7).Text())
         p.AddField("desc", desc)
     }
-    // these urls will be saved and crawed by other coroutines.
-    /*
-       p.AddTargetRequests(urls, "html")
 
-       name := query.Find(".entry-title .author").Text()
-       name = strings.Trim(name, " \t\n")
-       repository := query.Find(".entry-title .js-current-repository").Text()
-       repository = strings.Trim(repository, " \t\n")
-       //readme, _ := query.Find("#readme").Html()
-       if name == "" {
-           p.SetSkip(true)
-       }
-       // the entity we want to save by Pipeline
-       p.AddField("author", name)
-       p.AddField("project", repository)
-       //p.AddField("readme", readme)
-    */
 }
 
 func main() {
@@ -133,7 +124,7 @@ func main() {
     //  PageProcesser ;
     //  Task name used in Pipeline for record;
     spider.NewSpider(NewMyPageProcesser(), "TaskName").
-        AddUrl("http://zdb.pedaily.cn/inv/11/", "html"). // Start url, html is the responce type ("html" or "json")
+        AddUrl("http://zdb.pedaily.cn/inv/1/", "html"). // Start url, html is the responce type
         //AddUrl("http://zdb.pedaily.cn/inv/show14091/", "html"). // Start url, html is the responce type ("html" or "json")
         AddPipeline(pipeline.NewPipelineConsole()).      // Print result on screen
         AddPipeline(tjouzijie_pipeline.NewMyPipeline()). // Print result on screen
